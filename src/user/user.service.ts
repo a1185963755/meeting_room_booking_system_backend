@@ -61,19 +61,17 @@ export class UserService {
   }
 
   async sendEmail(email: string) {
-    // 1. 生成6位随机验证码
+    // 1. 初始化配置
     const captcha = Math.random().toString().slice(-6);
-
+    const expireTime = 5 * 60;
+    const mailSubject = '会议室预定系统-验证码';
+    const mailContent = `您的验证码是:${captcha}, 有效期为5分钟`;
     // 2. 将验证码保存到Redis,有效期为5分钟
     const redisKey = `captcha_${email}`;
-    await this.redisService.set(redisKey, captcha, 5 * 60);
+    await this.redisService.set(redisKey, captcha, expireTime);
 
     // 3. 发送验证码邮件
-    await this.emailService.sendEmail(
-      email,
-      '会议室预定系统-验证码',
-      `您的验证码是:${captcha}, 有效期为5分钟`,
-    );
+    await this.emailService.sendEmail(email, mailSubject, mailContent);
 
     return {
       message: '验证码发送成功',
