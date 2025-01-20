@@ -10,28 +10,36 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpInterceptor } from './common/interceptor/http.interceptor';
 import { RedisModule } from './redis/redis.module';
 import { EmailModule } from './email/email.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',
-      port: 3307,
-      username: 'root',
-      password: 'root',
-      database: 'meeting_room_booking_system',
-      synchronize: true,
-      logging: true,
-      entities: [User, Role, Permission],
-      poolSize: 10,
-      connectorPackage: 'mysql2',
-      extra: {
-        authPlugin: 'sha256_password',
-      },
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get('db_host'),
+        port: configService.get('db_port'),
+        username: configService.get('db_username'),
+        password: configService.get('db_password'),
+        database: configService.get('db_database'),
+        synchronize: true,
+        logging: true,
+        entities: [User, Role, Permission],
+        poolSize: 10,
+        connectorPackage: 'mysql2',
+        extra: {
+          authPlugin: 'sha256_password',
+        },
+      }),
     }),
     UserModule,
     RedisModule,
     EmailModule,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['src/.env'],
+    }),
   ],
   controllers: [AppController],
   providers: [
