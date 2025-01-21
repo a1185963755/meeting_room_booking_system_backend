@@ -6,11 +6,14 @@ import { UserModule } from './user/user.module';
 import { Permission } from './user/entities/permission.entity';
 import { Role } from './user/entities/role.entity';
 import { User } from './user/entities/user.entiey';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpInterceptor } from './common/interceptor/http.interceptor';
 import { RedisModule } from './redis/redis.module';
 import { EmailModule } from './email/email.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { LoginGuard } from './common/guard/login.guard';
+import { PermissionGuard } from './common/guard/permission.guard';
 
 @Module({
   imports: [
@@ -40,6 +43,16 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       isGlobal: true,
       envFilePath: ['src/.env'],
     }),
+    JwtModule.registerAsync({
+      global: true,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('jwt_secret'),
+        signOptions: {
+          expiresIn: configService.get('jwt_access_token_expires_time'),
+        },
+      }),
+    }),
   ],
   controllers: [AppController],
   providers: [
@@ -47,6 +60,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     {
       provide: APP_INTERCEPTOR,
       useClass: HttpInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: LoginGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
     },
   ],
 })

@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { Role } from './role.entity';
+import { Exclude, Expose, Transform } from 'class-transformer';
 
 @Entity({
   name: 'users',
@@ -22,6 +23,7 @@ export class User {
   })
   username: string;
 
+  @Exclude()
   @Column({
     length: 50,
     comment: '密码',
@@ -73,9 +75,15 @@ export class User {
   @UpdateDateColumn()
   updateTime: Date;
 
+  @Transform(({ value }) => value.map((item: Role) => item.name))
   @ManyToMany(() => Role)
   @JoinTable({
     name: 'user_roles',
   })
   roles: Role[];
+
+  @Expose()
+  get permissions() {
+    return [...new Set(this.roles.flatMap((item: Role) => item.permissions))];
+  }
 }

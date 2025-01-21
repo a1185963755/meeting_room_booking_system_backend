@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Permission } from './permission.entity';
+import { Transform } from 'class-transformer';
 
 @Entity({
   name: 'roles',
@@ -20,6 +21,7 @@ export class Role {
   })
   name: string;
 
+  @Transform(({ value }) => [...new Set(value)])
   @ManyToMany(() => Permission)
   @JoinTable({
     name: 'role_permissions',
