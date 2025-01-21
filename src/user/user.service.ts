@@ -16,6 +16,8 @@ import { Role } from './entities/role.entity';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -82,14 +84,14 @@ export class UserService {
     };
   }
 
-  async sendEmail(email: string) {
+  async sendEmail(email: string, key: string) {
     // 1. 初始化配置
     const captcha = Math.random().toString().slice(-6);
     const expireTime = 5 * 60;
     const mailSubject = '会议室预定系统-验证码';
     const mailContent = `您的验证码是:${captcha}, 有效期为5分钟`;
     // 2. 将验证码保存到Redis,有效期为5分钟
-    const redisKey = `captcha_${email}`;
+    const redisKey = `${key}_${email}`;
     await this.redisService.set(redisKey, captcha, expireTime);
 
     // 3. 发送验证码邮件
@@ -225,5 +227,142 @@ export class UserService {
       accessToken,
       refreshToken,
     };
+  }
+  async getUserInfo(userId: number) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+        },
+        relations: ['roles', 'roles.permissions'],
+      });
+
+      if (!user) {
+        throw new BadRequestException('用户不存在');
+      }
+
+      // 返回用户信息
+      return {
+        message: '获取用户信息成功',
+        userInfo: user,
+      };
+    } catch (error) {
+      throw new BadRequestException('获取用户信息失败');
+    }
+  }
+  async updatePassword(
+    userId: number,
+    updateUserPasswordDto: UpdateUserPasswordDto,
+  ) {
+    try {
+      // 验证验证码是否正确
+      const redisKey = `update_password_captcha_${updateUserPasswordDto.email}`;
+      const captcha = await this.redisService.get(redisKey);
+
+      if (!captcha || captcha !== updateUserPasswordDto.captcha) {
+        throw new BadRequestException('验证码错误或已过期');
+      }
+
+      // 查找用户
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+          email: updateUserPasswordDto.email,
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('用户不存在');
+      }
+
+      const newPassword = md5(updateUserPasswordDto.newPassword);
+      const oldPassword = md5(updateUserPasswordDto.oldPassword);
+
+      // 验证旧密码是否正确
+      const isOldPasswordValid = oldPassword === user.password;
+
+      if (!isOldPasswordValid) {
+        throw new BadRequestException('旧密码错误');
+      }
+
+      if (newPassword === oldPassword) {
+        throw new BadRequestException('新旧密码不能相同');
+      }
+
+      // 更新密码
+      user.password = newPassword;
+      await this.userRepository.save(user);
+
+      // 删除验证码
+      await this.redisService.del(redisKey);
+
+      return {
+        message: '密码修改成功',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('密码修改失败');
+    }
+  }
+  // 修改用户信息
+  async updateUserInfo(userId: number, updateUserDto: UpdateUserDto) {
+    try {
+      // 验证验证码
+      const redisKey = `update_user_captcha_${updateUserDto.email}`;
+      const captcha = await this.redisService.get(redisKey);
+
+      if (!captcha || captcha !== updateUserDto.captcha) {
+        throw new BadRequestException('验证码错误或已过期');
+      }
+
+      // 查找用户
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('用户不存在');
+      }
+
+      // 检查邮箱是否被其他用户使用
+      if (updateUserDto.email !== user.email) {
+        const existUser = await this.userRepository.findOne({
+          where: {
+            email: updateUserDto.email,
+          },
+        });
+
+        if (existUser) {
+          throw new BadRequestException('该邮箱已被使用');
+        }
+      }
+
+      // 更新用户信息
+      user.email = updateUserDto.email;
+      if (updateUserDto.nickName) {
+        user.nickName = updateUserDto.nickName;
+      }
+      if (updateUserDto.headPic) {
+        user.headPic = updateUserDto.headPic;
+      }
+
+      await this.userRepository.save(user);
+
+      // 删除验证码
+      await this.redisService.del(redisKey);
+
+      return {
+        message: '用户信息修改成功',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('用户信息修改失败');
+    }
   }
 }

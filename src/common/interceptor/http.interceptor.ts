@@ -21,7 +21,9 @@ export class HttpInterceptor implements NestInterceptor {
 
     // 记录请求日志
     this.logger.log(
-      `Request: ${request.method} ${request.url} from ${request.ip}`,
+      `Request: ${request.method} ${request.url} from ${request.ip}: ${
+        context.getClass().name
+      } ${context.getHandler().name}`,
     );
 
     // 计算请求处理时间
@@ -31,7 +33,7 @@ export class HttpInterceptor implements NestInterceptor {
       map((data) => {
         // 计算响应时间
         const duration = Date.now() - startTime;
-
+        this.logger.debug(`Response: ${JSON.stringify(data)}`);
         // 统一成功响应格式
         return {
           code: HttpStatus.OK,
@@ -47,7 +49,9 @@ export class HttpInterceptor implements NestInterceptor {
       catchError((error) => {
         // 记录错误日志
         this.logger.error(
-          `Error in ${request.method} ${request.url}: ${error.message}`,
+          `Error in ${request.method} ${request.url}: ${error.message}: ${
+            context.getClass().name
+          } ${context.getHandler().name}`,
           error.stack,
         );
 
