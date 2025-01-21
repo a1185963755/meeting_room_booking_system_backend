@@ -1,9 +1,13 @@
 import {
+  BadRequestException,
   Body,
   ClassSerializerInterceptor,
   Controller,
+  DefaultValuePipe,
   Get,
+  ParseIntPipe,
   Post,
+  Query,
   Req,
   UseInterceptors,
 } from '@nestjs/common';
@@ -13,6 +17,9 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { RequireLogin, UserInfo } from 'src/common/decorator/custom.decorator';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { FreezeUserDto } from './dto/freeze-user.dto';
+import { UnfreezeUserDto } from './dto/unfreeze-user.dto';
+import { UserListDto } from './dto/user-list.dto';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -90,5 +97,27 @@ export class UserController {
     @UserInfo('userId') userId: number,
   ) {
     return this.userService.updateUserInfo(userId, updateUserDto);
+  }
+  //冻结用户
+  @Post('freeze')
+  @RequireLogin()
+  // @RequirePermission('user:freeze')
+  async freezeUser(@Body() freezeUserDto: FreezeUserDto) {
+    return this.userService.freezeUser(freezeUserDto.id);
+  }
+
+  //解冻用户
+  @Post('unfreeze')
+  @RequireLogin()
+  // @RequirePermission('user:unfreeze')
+  async unfreezeUser(@Body() unfreezeUserDto: UnfreezeUserDto) {
+    return this.userService.unfreezeUser(unfreezeUserDto.id);
+  }
+  //获取用户列表
+  @Get('list')
+  @RequireLogin()
+  // @RequirePermission('user:list')
+  async getUserList(@Query() userListDto: UserListDto) {
+    return this.userService.getUserList(userListDto);
   }
 }

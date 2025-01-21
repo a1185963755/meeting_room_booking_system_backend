@@ -18,6 +18,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserListDto } from './dto/user-list.dto';
 
 @Injectable()
 export class UserService {
@@ -363,6 +364,120 @@ export class UserService {
         throw error;
       }
       throw new BadRequestException('用户信息修改失败');
+    }
+  }
+  // 冻结用户
+  async freezeUser(userId: number) {
+    try {
+      // 查找用户
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+        },
+      });
+      if (!user) {
+        throw new BadRequestException('用户不存在');
+      }
+
+      // 检查用户是否已被冻结
+      if (user.isFrozen) {
+        throw new BadRequestException('用户已被冻结');
+      }
+
+      // 冻结用户
+      user.isFrozen = true;
+      await this.userRepository.save(user);
+
+      return {
+        message: '用户冻结成功',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('用户冻结失败');
+    }
+  }
+
+  // 解冻用户
+  async unfreezeUser(userId: number) {
+    try {
+      // 查找用户
+      const user = await this.userRepository.findOne({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('用户不存在');
+      }
+
+      // 检查用户是否已被解冻
+      if (!user.isFrozen) {
+        throw new BadRequestException('用户未被冻结');
+      }
+
+      // 解冻用户
+      user.isFrozen = false;
+      await this.userRepository.save(user);
+
+      return {
+        message: '用户解冻成功',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('用户解冻失败');
+    }
+  }
+  // 获取用户列表
+  async getUserList(userListDto: UserListDto) {
+    try {
+      // 构建查询条件
+      const { page, pageSize, username, nickName, email } = userListDto;
+
+      const queryBuilder = this.userRepository.createQueryBuilder('user');
+      // 添加可选的过滤条件
+      if (username) {
+        queryBuilder.andWhere('user.username LIKE :username', {
+          username: `%${username}%`,
+        });
+      }
+      if (nickName) {
+        queryBuilder.andWhere('user.nickName LIKE :nickName', {
+          nickName: `%${nickName}%`,
+        });
+      }
+      if (email) {
+        queryBuilder.andWhere('user.email LIKE :email', {
+          email: `%${email}%`,
+        });
+      }
+
+      // 计算总数
+      const total = await queryBuilder.getCount();
+
+      // 分页查询
+      const users = await queryBuilder
+        .skip((page - 1) * pageSize)
+        .take(pageSize)
+        .getMany();
+      // 移除敏感信息
+      const safeUsers = users.map((user) => {
+        const { password, ...rest } = user;
+        return rest;
+      });
+
+      return {
+        users: safeUsers,
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      throw new BadRequestException('获取用户列表失败');
     }
   }
 }
