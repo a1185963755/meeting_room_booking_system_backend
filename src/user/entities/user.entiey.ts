@@ -20,12 +20,13 @@ export class User {
   @Column({
     length: 50,
     comment: '用户名',
+    unique: true,
   })
   username: string;
 
   @Exclude()
   @Column({
-    length: 50,
+    length: 128,
     comment: '密码',
   })
   password: string;
@@ -40,6 +41,7 @@ export class User {
   @Column({
     comment: '邮箱',
     length: 50,
+    unique: true,
   })
   email: string;
 

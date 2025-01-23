@@ -17,6 +17,7 @@ import { FreezeUserDto } from './dto/freeze-user.dto';
 import { UnfreezeUserDto } from './dto/unfreeze-user.dto';
 import { UserListDto } from './dto/user-list.dto';
 import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ForgetUserPasswordDto } from './dto/forget-user-password.dto';
 
 @ApiTags('用户管理')
 @Controller('user')
@@ -48,7 +49,7 @@ export class UserController {
   async sendUpdatePasswordCaptcha(@Body('email') email: string) {
     return this.userService.sendEmail(email, 'update_password_captcha');
   }
-  //修改邮箱验证码
+  //修改用户信息验证码
   @ApiBody({
     schema: { type: 'object', properties: { email: { type: 'string' } } },
   })
@@ -58,6 +59,16 @@ export class UserController {
   async sendUpdateUserCaptcha(@Body('email') email: string) {
     return this.userService.sendEmail(email, 'update_user_captcha');
   }
+  //忘记密码验证码
+  @ApiBody({
+    schema: { type: 'object', properties: { email: { type: 'string' } } },
+  })
+  @ApiOperation({ summary: '发送忘记密码验证码' })
+  @Post('forget_password/captcha')
+  async sendForgetPasswordCaptcha(@Body('email') email: string) {
+    return this.userService.sendEmail(email, 'forget_password_captcha');
+  }
+
   //登录
   @ApiBody({ type: LoginUserDto })
   @ApiOperation({ summary: '登录' })
@@ -121,6 +132,13 @@ export class UserController {
   ) {
     return this.userService.updatePassword(userId, updateUserPasswordDto);
   }
+  //忘记密码
+  @ApiBody({ type: ForgetUserPasswordDto })
+  @ApiOperation({ summary: '忘记密码' })
+  @Post('forget_password')
+  async forgetPassword(@Body() forgetUserPasswordDto: ForgetUserPasswordDto) {
+    return this.userService.forgetPassword(forgetUserPasswordDto);
+  }
   //修改用户信息
   @ApiBody({ type: UpdateUserDto })
   @ApiOperation({ summary: '修改用户信息' })
@@ -149,6 +167,7 @@ export class UserController {
   async unfreezeUser(@Body() unfreezeUserDto: UnfreezeUserDto) {
     return this.userService.unfreezeUser(unfreezeUserDto.id);
   }
+
   //获取用户列表
   @ApiBody({ type: UserListDto })
   @ApiOperation({ summary: '获取用户列表' })

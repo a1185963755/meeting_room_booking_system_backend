@@ -19,9 +19,12 @@ import { ConfigService } from '@nestjs/config';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserListDto } from './dto/user-list.dto';
+import { ForgetUserPasswordDto } from './dto/forget-user-password.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
+  private SALT_ROUNDS = 10;
   @InjectRepository(User)
   private readonly userRepository: Repository<User>;
 
@@ -53,14 +56,21 @@ export class UserService {
 
     // 2. 检查用户名是否已存在
     const existingUser = await this.userRepository.findOne({
-      where: { username: createUserDto.username },
+      where: [
+        { username: createUserDto.username },
+        { email: createUserDto.email },
+      ],
     });
     if (existingUser) {
-      throw new Error('用户名已存在');
+      throw new Error('用户名或邮箱已存在');
     }
 
     // 3. 对密码进行加密处理
-    const hashedPassword = md5(createUserDto.password);
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.password,
+      this.SALT_ROUNDS,
+    );
+    console.log(hashedPassword);
 
     // 4. 创建用户实体并保存
     const user = new User();
@@ -107,10 +117,10 @@ export class UserService {
     const { username, password } = loginUserDto;
 
     const user = await this.userRepository.findOne({
-      where: {
-        username,
-        isAdmin,
-      },
+      where: [
+        { username: username, isAdmin: isAdmin },
+        { email: username, isAdmin: isAdmin },
+      ],
       relations: ['roles', 'roles.permissions'],
     });
 
@@ -122,7 +132,8 @@ export class UserService {
       }
     }
 
-    if (user.password !== md5(password)) {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       throw new BadRequestException('密码错误');
     }
     const { accessToken, refreshToken } = this.signUser(user);
@@ -213,7 +224,7 @@ export class UserService {
     }
   }
   async updatePassword(
-    userId: number,
+    id: number,
     updateUserPasswordDto: UpdateUserPasswordDto,
   ) {
     try {
@@ -228,7 +239,7 @@ export class UserService {
       // 查找用户
       const user = await this.userRepository.findOne({
         where: {
-          id: userId,
+          id,
           email: updateUserPasswordDto.email,
         },
       });
@@ -237,8 +248,8 @@ export class UserService {
         throw new BadRequestException('用户不存在');
       }
 
-      const newPassword = md5(updateUserPasswordDto.newPassword);
-      const oldPassword = md5(updateUserPasswordDto.oldPassword);
+      const newPassword = updateUserPasswordDto.newPassword;
+      const oldPassword = updateUserPasswordDto.oldPassword;
 
       // 验证旧密码是否正确
       const isOldPasswordValid = oldPassword === user.password;
@@ -253,6 +264,55 @@ export class UserService {
 
       // 更新密码
       user.password = newPassword;
+      await this.userRepository.save(user);
+
+      // 删除验证码
+      await this.redisService.del(redisKey);
+
+      return {
+        message: '密码修改成功',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException('密码修改失败');
+    }
+  }
+  // 忘记密码
+  async forgetPassword(forgetUserPasswordDto: ForgetUserPasswordDto) {
+    try {
+      // 验证验证码是否正确
+      const redisKey = `forget_password_captcha_${forgetUserPasswordDto.email}`;
+      const captcha = await this.redisService.get(redisKey);
+
+      if (!captcha || captcha !== forgetUserPasswordDto.captcha) {
+        throw new BadRequestException('验证码错误或已过期');
+      }
+
+      // 查找用户
+      const user = await this.userRepository.findOne({
+        where: {
+          email: forgetUserPasswordDto.email,
+        },
+      });
+
+      if (!user) {
+        throw new BadRequestException('用户不存在');
+      }
+
+      const newPassword = forgetUserPasswordDto.password;
+      // 对比新旧密码是否相同
+      const isSamePassword = await bcrypt.compare(newPassword, user.password);
+      if (isSamePassword) {
+        throw new BadRequestException('新旧密码不能相同');
+      }
+
+      // 对新密码进行哈希
+      const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
+
+      // 更新密码
+      user.password = hashedPassword;
       await this.userRepository.save(user);
 
       // 删除验证码
