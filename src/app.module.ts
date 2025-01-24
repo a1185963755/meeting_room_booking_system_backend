@@ -14,6 +14,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { LoginGuard } from './common/guard/login.guard';
 import { PermissionGuard } from './common/guard/permission.guard';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { PermissionGuard } from './common/guard/permission.guard';
         },
       }),
     }),
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [

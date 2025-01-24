@@ -21,6 +21,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserListDto } from './dto/user-list.dto';
 import { ForgetUserPasswordDto } from './dto/forget-user-password.dto';
 import * as bcrypt from 'bcrypt';
+import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
 export class UserService {
@@ -45,6 +46,9 @@ export class UserService {
 
   @Inject(ConfigService)
   private readonly configService: ConfigService;
+
+  @Inject(UploadService)
+  private readonly uploadService: UploadService;
 
   async create(createUserDto: CreateUserDto) {
     // 1. 验证验证码是否正确
@@ -477,5 +481,13 @@ export class UserService {
     } catch (error) {
       throw new BadRequestException('获取用户列表失败');
     }
+  }
+  // 上传头像
+  async uploadImage(file: Express.Multer.File) {
+    const result = this.uploadService.uploadFile([file]);
+    return {
+      message: '图片上传成功',
+      data: result,
+    };
   }
 }

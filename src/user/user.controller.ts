@@ -1,10 +1,13 @@
 import {
+  BadRequestException,
   Body,
   ClassSerializerInterceptor,
   Controller,
   Get,
   Post,
   Query,
+  Req,
+  UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -18,6 +21,9 @@ import { UnfreezeUserDto } from './dto/unfreeze-user.dto';
 import { UserListDto } from './dto/user-list.dto';
 import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ForgetUserPasswordDto } from './dto/forget-user-password.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 
 @ApiTags('用户管理')
 @Controller('user')
@@ -167,5 +173,48 @@ export class UserController {
   // @RequirePermission('user:list')
   async getUserList(@Query() userListDto: UserListDto) {
     return this.userService.getUserList(userListDto);
+  }
+
+  // @ApiBody({ type: UploadImageDto })
+  @ApiOperation({ summary: '上传头像' })
+  @Post('upload')
+  @RequireLogin()
+  @UseInterceptors(
+    FileInterceptor('file', {
+      dest: './uploads',
+      storage: diskStorage({
+        destination: './uploads/',
+        filename(req, file, callback) {
+          // 自定义文件名
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
+          callback(
+            null,
+            `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
+          );
+        },
+      }),
+      limits: {
+        fileSize: 1024 * 1024 * 3,
+      },
+
+      fileFilter(req, file, callback) {
+        const filetypes = /jpg|jpeg|png|gif/;
+        const mimetype = filetypes.test(file.mimetype);
+        const extname = filetypes.test(file.originalname.split('.').pop()!);
+        if (mimetype && extname) {
+          callback(null, true);
+        } else {
+          callback(new Error('文件类型不合法'), false);
+        }
+      },
+    }),
+  )
+  async uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('未上传任何文件');
+    }
+
+    return await this.userService.uploadImage(file);
   }
 }
