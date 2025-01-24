@@ -49,16 +49,7 @@ export class UserController {
   async sendUpdatePasswordCaptcha(@Body('email') email: string) {
     return this.userService.sendEmail(email, 'update_password_captcha');
   }
-  //修改用户信息验证码
-  @ApiBody({
-    schema: { type: 'object', properties: { email: { type: 'string' } } },
-  })
-  @ApiOperation({ summary: '发送修改邮箱验证码' })
-  @Post('update_user/captcha')
-  @RequireLogin()
-  async sendUpdateUserCaptcha(@Body('email') email: string) {
-    return this.userService.sendEmail(email, 'update_user_captcha');
-  }
+
   //忘记密码验证码
   @ApiBody({
     schema: { type: 'object', properties: { email: { type: 'string' } } },

@@ -1,4 +1,3 @@
-import { IsEmail, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 export class UpdateUserDto {
   @ApiProperty({
@@ -12,24 +11,7 @@ export class UpdateUserDto {
   nickName: string;
 
   @ApiProperty({
-    description: '邮箱',
+    description: '手机号',
   })
-  @IsNotEmpty({
-    message: '邮箱不能为空',
-  })
-  @IsEmail(
-    {},
-    {
-      message: '不是合法的邮箱格式',
-    },
-  )
-  email: string;
-
-  @ApiProperty({
-    description: '验证码',
-  })
-  @IsNotEmpty({
-    message: '验证码不能为空',
-  })
-  captcha: string;
+  phoneNumber: string;
 }

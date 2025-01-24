@@ -70,7 +70,6 @@ export class UserService {
       createUserDto.password,
       this.SALT_ROUNDS,
     );
-    console.log(hashedPassword);
 
     // 4. 创建用户实体并保存
     const user = new User();
@@ -180,6 +179,7 @@ export class UserService {
         username: user.username,
         roles: user.roles.map((role) => role.name),
         permissions: user.permissions.map((permission) => permission.code),
+        email: user.email,
       },
       {
         expiresIn:
@@ -331,14 +331,6 @@ export class UserService {
   // 修改用户信息
   async updateUserInfo(userId: number, updateUserDto: UpdateUserDto) {
     try {
-      // 验证验证码
-      const redisKey = `update_user_captcha_${updateUserDto.email}`;
-      const captcha = await this.redisService.get(redisKey);
-
-      if (!captcha || captcha !== updateUserDto.captcha) {
-        throw new BadRequestException('验证码错误或已过期');
-      }
-
       // 查找用户
       const user = await this.userRepository.findOne({
         where: {
@@ -350,32 +342,17 @@ export class UserService {
         throw new BadRequestException('用户不存在');
       }
 
-      // 检查邮箱是否被其他用户使用
-      if (updateUserDto.email !== user.email) {
-        const existUser = await this.userRepository.findOne({
-          where: {
-            email: updateUserDto.email,
-          },
-        });
-
-        if (existUser) {
-          throw new BadRequestException('该邮箱已被使用');
-        }
-      }
-
-      // 更新用户信息
-      user.email = updateUserDto.email;
       if (updateUserDto.nickName) {
         user.nickName = updateUserDto.nickName;
       }
       if (updateUserDto.headPic) {
         user.headPic = updateUserDto.headPic;
       }
+      if (updateUserDto.phoneNumber) {
+        user.phoneNumber = updateUserDto.phoneNumber;
+      }
 
       await this.userRepository.save(user);
-
-      // 删除验证码
-      await this.redisService.del(redisKey);
 
       return {
         message: '用户信息修改成功',
