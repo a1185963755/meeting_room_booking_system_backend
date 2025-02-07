@@ -15,9 +15,6 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true, // 自动将字符串转换为数字
-      transformOptions: {
-        enableImplicitConversion: true, // 启用隐式转换
-      },
     }),
   );
   app.useStaticAssets('uploads', {

@@ -74,14 +74,6 @@ export class UserController {
   async login(@Body() loginUserDto: LoginUserDto) {
     return this.userService.login(loginUserDto);
   }
-  //管理员登录
-  @ApiBody({ type: LoginUserDto })
-  @ApiOperation({ summary: '管理员登录' })
-  @UseInterceptors(ClassSerializerInterceptor)
-  @Post('admin/login')
-  async adminLogin(@Body() loginUserDto: LoginUserDto) {
-    return this.userService.login(loginUserDto, true);
-  }
   //刷新token
   @ApiBody({
     schema: {
@@ -121,7 +113,7 @@ export class UserController {
   //修改密码
   @ApiBody({ type: UpdateUserPasswordDto })
   @ApiOperation({ summary: '修改密码' })
-  @Post(['update-password', 'admin/update-password'])
+  @Post(['update-password'])
   @RequireLogin()
   async updatePassword(
     @Body() updateUserPasswordDto: UpdateUserPasswordDto,
@@ -139,7 +131,7 @@ export class UserController {
   //修改用户信息
   @ApiBody({ type: UpdateUserDto })
   @ApiOperation({ summary: '修改用户信息' })
-  @Post(['update', 'admin/update'])
+  @Post(['update'])
   @RequireLogin()
   async updateUserInfo(
     @Body() updateUserDto: UpdateUserDto,
@@ -166,7 +158,6 @@ export class UserController {
   }
 
   //获取用户列表
-  @ApiBody({ type: UserListDto })
   @ApiOperation({ summary: '获取用户列表' })
   @Get('list')
   @RequireLogin()

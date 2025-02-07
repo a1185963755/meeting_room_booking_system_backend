@@ -116,23 +116,16 @@ export class UserService {
     };
   }
 
-  async login(loginUserDto: LoginUserDto, isAdmin: boolean = false) {
+  async login(loginUserDto: LoginUserDto) {
     const { username, password } = loginUserDto;
 
     const user = await this.userRepository.findOne({
-      where: [
-        { username: username, isAdmin: isAdmin },
-        { email: username, isAdmin: isAdmin },
-      ],
+      where: [{ username: username }, { email: username }],
       relations: ['roles', 'roles.permissions'],
     });
 
     if (!user) {
-      if (isAdmin) {
-        throw new BadRequestException('用户名不存在或该用户不是管理员');
-      } else {
-        throw new BadRequestException('用户名不存在');
-      }
+      throw new BadRequestException('用户名不存在');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -256,9 +249,9 @@ export class UserService {
       const oldPassword = updateUserPasswordDto.oldPassword;
 
       // 验证旧密码是否正确
-      const isOldPasswordValid = oldPassword === user.password;
 
-      if (!isOldPasswordValid) {
+      const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+      if (!isPasswordValid) {
         throw new BadRequestException('旧密码错误');
       }
 
@@ -267,7 +260,9 @@ export class UserService {
       }
 
       // 更新密码
-      user.password = newPassword;
+      // 3. 对密码进行加密处理
+      const hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
+      user.password = hashedPassword;
       await this.userRepository.save(user);
 
       // 删除验证码

@@ -2,7 +2,7 @@ import { IsInt, IsOptional, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
-export class UserListDto {
+export class MeetingRoomListDto {
   constructor() {
     this.page = 1;
     this.pageSize = 10;
@@ -29,20 +29,28 @@ export class UserListDto {
   pageSize: number;
 
   @ApiProperty({
-    description: '用户名',
+    description: '会议室名称',
   })
   @IsOptional()
-  username?: string;
+  name?: string;
+  @ApiProperty({
+    description: '会议室容量',
+  })
+  @IsOptional()
+  capacity?: number;
 
   @ApiProperty({
-    description: '昵称',
+    description: '会议室是否被预定',
   })
   @IsOptional()
-  nickName?: string;
+  @Transform(({ value }) => {
+    return value === 'true';
+  })
+  isBooked?: boolean;
 
   @ApiProperty({
-    description: '邮箱',
+    description: '会议室位置',
   })
   @IsOptional()
-  email?: string;
+  location?: string;
 }
