@@ -1,5 +1,4 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { CreateBookingDto } from './create-booking.dto';
+import { ApiProperty } from '@nestjs/swagger';
 import { BookingStatus } from '../entities/booking.entity';
 import { IsEnum, IsOptional } from 'class-validator';
 
@@ -8,9 +7,8 @@ export class UpdateBookingDto {
   id: number;
 
   @ApiProperty({ description: '状态', enum: BookingStatus })
-  @IsEnum(BookingStatus)
   @IsOptional()
-  status: BookingStatus;
+  status: number;
 
   @ApiProperty({ description: '备注' })
   @IsOptional()

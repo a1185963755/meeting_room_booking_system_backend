@@ -27,8 +27,19 @@ export class BookingService {
   @Inject(EmailService)
   private readonly emailService: EmailService;
 
+  private validateTime(time: number | string | Date) {
+    console.log(time);
+    const timeDate = new Date(time);
+    if (isNaN(timeDate.getTime())) {
+      throw new BadRequestException('时间格式不正确');
+    }
+  }
+
   async create(createBookingDto: CreateBookingDto, userId: number) {
     const { meetingRoomId, startTime, endTime, note } = createBookingDto;
+    this.validateTime(startTime);
+    this.validateTime(endTime);
+
     if (startTime >= endTime) {
       throw new BadRequestException('结束时间必须晚于开始时间');
     }
@@ -105,12 +116,14 @@ export class BookingService {
     }
 
     if (startTime) {
+      this.validateTime(startTime);
       queryBuilder.andWhere('booking.startTime >= :startTime', {
         startTime: new Date(startTime),
       });
     }
 
     if (endTime) {
+      this.validateTime(endTime);
       queryBuilder.andWhere('booking.endTime <= :endTime', {
         endTime: new Date(endTime),
       });

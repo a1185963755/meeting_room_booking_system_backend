@@ -2,10 +2,10 @@ import { MeetingRoom } from 'src/meeting-room/entities/meeting-room.entity';
 import { User } from 'src/user/entities/user.entiey';
 
 export enum BookingStatus {
-  APPLYING = '1', // 申请中
-  APPROVED = '2', // 审批通过
-  REJECTED = '3', // 审批驳回
-  CANCELLED = '4', // 已解除
+  APPLYING = 1, // 申请中
+  APPROVED = 2, // 审批通过
+  REJECTED = 3, // 审批驳回
+  CANCELLED = 4, // 已解除
 }
 
 import {
@@ -33,11 +33,10 @@ export class Booking {
   endTime: Date;
 
   @Column({
-    length: 20,
     comment: '状态（申请中、审批通过、审批驳回、已解除）',
     default: BookingStatus.APPLYING,
   })
-  status: BookingStatus;
+  status: number;
 
   @Column({
     length: 100,
@@ -45,6 +44,13 @@ export class Booking {
     default: '',
   })
   note: string;
+
+  @Column({
+    length: 100,
+    comment: '描述',
+    default: '',
+  })
+  description: string;
 
   @ManyToOne(() => User)
   user: User;
