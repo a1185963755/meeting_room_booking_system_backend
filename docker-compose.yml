@@ -1,0 +1,34 @@
+services:
+  meeting_room_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - mysql-container
+      - redis-container
+    ports:
+      - "6001:3000"
+    networks:
+      - meeting_room_network
+
+  mysql-container:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: meeting_room_booking_system
+      TZ: Asia/Shanghai
+    volumes:
+      - D:/mysql-8.3.0-winx64/docker:/var/lib/mysql
+    networks:
+      - meeting_room_network
+
+  redis-container:
+    image: redis
+    volumes:
+      - D:/redis-data:/data
+    networks:
+      - meeting_room_network
+
+networks:
+  meeting_room_network:
+    driver: bridge

@@ -8,7 +8,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entiey';
-import { md5 } from 'src/utils/crypt';
 import { RedisService } from 'src/redis/redis.service';
 import { EmailService } from 'src/email/email.service';
 import { Permission } from './entities/permission.entity';
@@ -20,7 +19,7 @@ import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserListDto } from './dto/user-list.dto';
 import { ForgetUserPasswordDto } from './dto/forget-user-password.dto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
