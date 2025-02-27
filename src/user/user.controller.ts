@@ -8,6 +8,7 @@ import {
   Query,
   Req,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -24,6 +25,7 @@ import { ForgetUserPasswordDto } from './dto/forget-user-password.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('用户管理')
 @Controller('user')
@@ -69,11 +71,11 @@ export class UserController {
   //登录
   @ApiBody({ type: LoginUserDto })
   @ApiOperation({ summary: '登录' })
+  @UseGuards(AuthGuard('local'))
   @UseInterceptors(ClassSerializerInterceptor)
   @Post('login')
-  async login(@Body() loginUserDto: LoginUserDto) {
-    return this.userService.login(loginUserDto);
-  }
+  async login() {}
+
   //刷新token
   @ApiBody({
     schema: {
@@ -205,7 +207,6 @@ export class UserController {
     if (!file) {
       throw new BadRequestException('未上传任何文件');
     }
-
     return await this.userService.uploadImage(file);
   }
 }
